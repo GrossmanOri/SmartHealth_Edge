@@ -53,6 +53,8 @@ class EdgeModule:
         success = self._transmit(event)
 
         if success:
+            # Log successful transmission for demo and debugging
+            print("Alert sent to backend successfully!")
             # If back online, check if there are buffered events to sync [cite: 76, 283, 530]
             if not self.is_online:
                 print("--- Connection Restored. Syncing Buffer... ---")
@@ -68,7 +70,9 @@ class EdgeModule:
     def _transmit(self, event):
         """Internal method to handle HTTPS POST [cite: 60-61, 265]"""
         try:
-            url = "http://localhost:5000/api/v1/alerts/new"  # [cite: 290]
+            # Updated endpoint for local demo backend (Node.js)
+            # url = "http://localhost:5000/api/v1/alerts/new"  # [cite: 290]
+            url = "http://localhost:3000/alert"
             response = requests.post(url, json=event, timeout=2)
             return response.status_code in [200, 201]
         except Exception:

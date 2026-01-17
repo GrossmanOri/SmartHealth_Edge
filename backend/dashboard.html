@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SmartHealth Live Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    h1 { margin: 0 0 8px; }
+    .meta { color: #666; margin-bottom: 16px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin: 10px 0; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #f3f3f3; }
+    .warn { background: #ffe6e6; border-color: #ffb3b3; }
+    code { background: #f7f7f7; padding: 2px 6px; border-radius: 6px; }
+    #status { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>SmartHealth – Live Alerts</h1>
+  <div class="meta">Backend: <code>localhost:3000</code> | Connection: <span id="status">connecting...</span></div>
+
+  <div id="alerts"></div>
+
+  <script>
+    const alertsDiv = document.getElementById("alerts");
+    const statusSpan = document.getElementById("status");
+
+    function addAlert(a) {
+      const ts = a.timestamp || "";
+      const card = document.createElement("div");
+      card.className = "card warn";
+      card.innerHTML = `
+        <div class="row">
+          <div class="pill">device: <b>${a.deviceId}</b></div>
+          <div class="pill">patient: <b>${a.patientId}</b></div>
+          <div class="pill">sensor: <b>${a.sensorType}</b></div>
+        </div>
+        <p><b>Value:</b> ${a.measuredValue} | <b>Deviation:</b> ${a.deviationScore}</p>
+        <p><b>Time:</b> ${ts}</p>
+        <small><b>eventId:</b> ${a.eventId}</small>
+      `;
+      alertsDiv.prepend(card);
+    }
+
+    const es = new EventSource("/events");
+
+    es.onopen = () => { statusSpan.textContent = "connected"; };
+    es.onerror = () => { statusSpan.textContent = "disconnected (retrying...)"; };
+
+    es.onmessage = (evt) => {
+      try {
+        const a = JSON.parse(evt.data);
+        addAlert(a);
+      } catch (e) {
+        console.error("Bad event:", evt.data);
+      }
+    };
+  </script>
+</body>
+</html>
