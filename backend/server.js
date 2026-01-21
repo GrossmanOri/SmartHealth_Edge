@@ -7,37 +7,37 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ---- In-memory storage for live dashboard ----
-const clients = new Set();       // SSE connections
-const lastAlerts = [];           // keeps recent alerts (for page refresh)
+const clients = new Set();
+const lastAlerts = [];
 const MAX_ALERTS = 50;
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-
+// ------- API endpoint receiving alerts -------
 app.post("/alert", (req, res) => {
     console.log(" ALERT RECEIVED FROM EDGE:");
     console.log(req.body);
-    // Store last alerts
+
     lastAlerts.unshift(req.body);
     if (lastAlerts.length > MAX_ALERTS) lastAlerts.pop();
-    // Broadcast to SSE clients
+
     const payload = `data: ${JSON.stringify(req.body)}\n\n`;
     for (const client of clients) {
         client.write(payload);
     }
+
     res.json({ status: "ok" });
 });
 
+// ------- SSE endpoint -------
 app.get("/events", (req, res) => {
-    // SSE headers
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders?.();
 
-    // Send existing alerts on connect (so refresh shows history)
     for (const a of lastAlerts) {
         res.write(`data: ${JSON.stringify(a)}\n\n`);
     }
@@ -51,14 +51,14 @@ app.get("/events", (req, res) => {
     });
 });
 
-
+// ------- DASHBOARD HTML -------
 app.get("/dashboard", (req, res) => {
     res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
-
+// ------- IMPORTANT: Redirect root to dashboard -------
 app.get("/", (req, res) => {
-    res.send("SmartHealth Backend is running");
+    res.redirect("/dashboard");
 });
 
 const PORT = 3000;
